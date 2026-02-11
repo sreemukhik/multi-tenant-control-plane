@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: platform-db
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: platform-db
+spec:
+  serviceName: platform-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: platform-db
+  template:
+    metadata:
+      labels:
+        app: platform-db
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.platform.postgres.image }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.platform.postgres.credentials.username }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: db-password
+            - name: POSTGRES_DB
+              value: {{ .Values.platform.postgres.credentials.database }}
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: {{ .Values.platform.postgres.storage.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.platform.postgres.storage.size }}

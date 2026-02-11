@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-platform-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: urumi-platform-api
+spec:
+  replicas: {{ .Values.platform.api.replicas }}
+  selector:
+    matchLabels:
+      app: urumi-platform-api
+  template:
+    metadata:
+      labels:
+        app: urumi-platform-api
+    spec:
+      serviceAccountName: {{ .Values.rbac.serviceAccountName }}
+      containers:
+        - name: api
+          image: "{{ .Values.platform.api.image.repository }}:{{ .Values.platform.api.image.tag }}"
+          imagePullPolicy: {{ .Values.platform.api.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: database-url
+            - name: MAX_STORES_PER_USER
+              value: {{ .Values.platform.api.env.MAX_STORES_PER_USER | quote }}
+            - name: PROVISIONING_TIMEOUT_MINUTES
+              value: {{ .Values.platform.api.env.PROVISIONING_TIMEOUT_MINUTES | quote }}
+          resources:
+            {{- if .Values.platform.api.resources }}
+            {{- toYaml .Values.platform.api.resources | nindent 12 }}
+            {{- end }}

@@ -1,0 +1,101 @@
+# Default values for woocommerce-store.
+# These are overridden by the backend at runtime.
+
+storeId: ""
+storeName: ""
+domain: ""
+adminDomain: ""
+
+wordpress:
+  enabled: true
+  image:
+    repository: bitnami/wordpress
+    tag: "6.4.2"
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  mariadb:
+    enabled: false # Use external MySQL chart
+  externalDatabase:
+    host: "{{ .Release.Name }}-mysql"
+    user: wordpress
+    password: "" # Set via secrets
+    database: wordpress
+  service:
+    type: ClusterIP
+
+mysql:
+  enabled: true
+  auth:
+    database: wordpress
+    username: wordpress
+    password: "" # Set via secrets
+    rootPassword: "" # Set via secrets
+  primary:
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    persistence:
+      enabled: true
+      size: 5Gi
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations: {}
+  hosts:
+    - host: store.k8s.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resourceQuota:
+  hard:
+    requests.cpu: "1"
+    requests.memory: "2Gi"
+    requests.storage: "10Gi"
+    persistentvolumeclaims: "5"
+    pods: "10"
+
+limitRange:
+  limits:
+    - max:
+        cpu: "2"
+        memory: "4Gi"
+      min:
+        cpu: "50m"
+        memory: "64Mi"
+      type: Container
+
+networkPolicy:
+  enabled: true
+  denyByDefault: true
+  allowIngress:
+    - from: ingressController
+  allowEgress:
+    - to: dns
+    - to: internet

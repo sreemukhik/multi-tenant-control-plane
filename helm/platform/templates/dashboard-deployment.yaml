@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: urumi-dashboard
+spec:
+  replicas: {{ .Values.platform.dashboard.replicas }}
+  selector:
+    matchLabels:
+      app: urumi-dashboard
+  template:
+    metadata:
+      labels:
+        app: urumi-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: "{{ .Values.platform.dashboard.image.repository }}:{{ .Values.platform.dashboard.image.tag }}"
+          imagePullPolicy: {{ .Values.platform.dashboard.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            {{- if .Values.platform.dashboard.resources }}
+            {{- toYaml .Values.platform.dashboard.resources | nindent 12 }}
+            {{- end }}

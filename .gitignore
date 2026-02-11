@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv
+venv
+env
+/backend/.env
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/frontend/dist
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project Specific
+.gemini/
+api_resp.json
+pid.txt
+product_id.txt
+*.yaml
+!helm/**/*.yaml
+connect-all.ps1
+launch-dashboard.ps1
+start-dashboard.ps1
+check_db.py
+fix_indent.py
+patch_non_critical.py
+patch_operator.py
+update_crd.py
+store-*.yaml
+stores_*.yaml
+crd_*.yaml
+*.ps1

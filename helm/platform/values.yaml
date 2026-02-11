@@ -1,0 +1,57 @@
+global:
+  environment: local
+  baseDomain: "k8s.local"
+
+platform:
+  api:
+    image:
+      repository: urumi-platform-api
+      tag: latest
+      pullPolicy: Never  # Use local images
+    replicas: 1
+    service:
+      type: ClusterIP
+      port: 8000
+    env:
+      DATABASE_URL: "postgresql+asyncpg://urumi:urumi123@platform-db:5432/urumi"
+      MAX_STORES_PER_USER: "5"
+      PROVISIONING_TIMEOUT_MINUTES: "10"
+  
+  dashboard:
+    image:
+      repository: urumi-dashboard
+      tag: latest
+      pullPolicy: Never
+    replicas: 1
+    service:
+      type: ClusterIP
+      port: 80
+  
+  postgres:
+    image: postgres:15-alpine
+    storage:
+      size: 5Gi
+      storageClass: local-path
+    credentials:
+      username: urumi
+      password: urumi123
+      database: urumi
+
+ingress:
+  enabled: true
+  className: traefik
+  tls:
+    enabled: false
+  hosts:
+    - host: dashboard.k8s.local
+      paths:
+        - path: /
+          service: urumi-dashboard
+    - host: api.k8s.local
+      paths:
+        - path: /
+          service: urumi-api
+
+rbac:
+  create: true
+  serviceAccountName: urumi-operator

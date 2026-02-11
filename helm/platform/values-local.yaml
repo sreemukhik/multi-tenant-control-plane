@@ -1,0 +1,41 @@
+# Local development values for Urumi Platform
+platform:
+  api:
+    image:
+      repository: urumi-platform-api
+      tag: latest
+      pullPolicy: Never
+    replicas: 1
+    env:
+      DATABASE_URL: "postgresql+asyncpg://urumi:urumi123@platform-db:5432/urumi"
+      MAX_STORES_PER_USER: "50"
+      PROVISIONING_TIMEOUT_MINUTES: "30"
+      KUBECONFIG_PATH: "/root/.kube/config"
+
+  dashboard:
+    image:
+      repository: urumi-dashboard
+      tag: latest
+      pullPolicy: Never
+    replicas: 1
+
+  postgres:
+    storage:
+      size: 1Gi
+    credentials:
+      username: urumi
+      password: urumi123
+      database: urumi
+
+ingress:
+  enabled: true
+  className: traefik
+  hosts:
+    - host: dashboard.k8s.local
+      paths:
+        - path: /
+          service: urumi-dashboard
+    - host: api.k8s.local
+      paths:
+        - path: /
+          service: urumi-platform-api

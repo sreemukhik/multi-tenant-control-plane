@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-operator
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: urumi-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: urumi-operator
+  template:
+    metadata:
+      labels:
+        app: urumi-operator
+    spec:
+      serviceAccountName: urumi-operator
+      containers:
+        - name: operator
+          image: "{{ .Values.platform.api.image.repository }}:{{ .Values.platform.api.image.tag }}"
+          imagePullPolicy: {{ .Values.platform.api.image.pullPolicy }}
+          command: ["kopf", "run", "-m", "app.operator.handlers", "--verbose"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: platform-secrets
+                  key: database-url
+            - name: API_URL
+              value: "http://urumi-platform-api:8000"
+            - name: PROVISIONING_TIMEOUT_MINUTES
+              value: {{ .Values.platform.api.env.PROVISIONING_TIMEOUT_MINUTES | quote }}
+            - name: PYTHONPATH
+              value: "/app"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

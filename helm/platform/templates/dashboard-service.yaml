@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: urumi-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: urumi-dashboard
+spec:
+  type: {{ .Values.platform.dashboard.service.type }}
+  ports:
+    - port: {{ .Values.platform.dashboard.service.port }}
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: urumi-dashboard

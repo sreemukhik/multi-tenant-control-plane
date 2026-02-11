@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: {{ .Values.storeId }}-limits
+  namespace: {{ .Release.Namespace }}
+spec:
+  limits:
+    {{- toYaml .Values.limitRange.limits | nindent 4 }}
