@@ -71,13 +71,17 @@ export default function Observability() {
                 />
                 <MetricCard
                     title="Avg Provisioning"
-                    value={`${Number(metrics?.avg_provisioning_time_seconds || 0).toFixed(1)}s`}
+                    value={typeof metrics?.avg_provisioning_time_seconds === 'number'
+                        ? `${metrics.avg_provisioning_time_seconds.toFixed(1)}s`
+                        : (metrics?.avg_provisioning_time_seconds || '0.0s')}
                     subtext="PERFORMANCE"
                     icon={Clock}
                 />
                 <MetricCard
                     title="Success Rate"
-                    value={`${Number(metrics?.success_rate || 0).toFixed(0)}%`}
+                    value={typeof metrics?.success_rate === 'number'
+                        ? `${metrics.success_rate.toFixed(0)}%`
+                        : (metrics?.success_rate || '100%')}
                     subtext="STABILITY"
                     icon={CheckCircle2}
                 />

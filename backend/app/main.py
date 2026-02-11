@@ -50,7 +50,7 @@ async def startup_event():
     logger.info("application_startup", environment=settings.ENVIRONMENT)
     # Auto-create tables for local dev
     from app.database import engine, Base
-    from app.models import Store # Import models to register them
+    from app.models import Store, AuditLog # Import models to register them
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database_tables_created")

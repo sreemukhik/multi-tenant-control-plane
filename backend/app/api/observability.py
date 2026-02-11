@@ -67,24 +67,25 @@ async def get_platform_metrics(db: AsyncSession = Depends(get_db)):
     active_namespaces = active_ns_result.scalar() or 0
 
     # 2. Average Provisioning Time (in seconds)
-    # Using simple SQLite/Postgres compatible calculation
-    time_stmt = select(
-        func.avg(
-            func.extract('epoch', Store.provisioning_completed_at) - 
-            func.extract('epoch', Store.provisioning_started_at)
-        )
-    ).where(Store.status == "ready", Store.provisioning_completed_at.isnot(None))
-    
-    # Handle SQLite fallback if needed (for local dev if not using Postgres)
-    # In this project, we are using Postgres in the deployment, but locally might be different.
-    # The models use DateTime(timezone=True) which works with extract('epoch') in PG.
-    
     avg_time = 0
     try:
-        time_result = await db.execute(time_stmt)
-        avg_time = time_result.scalar() or 0
-    except:
-        # Fallback for SQLite or other errors
+        # Cross-DB approach for average provisioning time
+        stmt = select(Store).where(
+            Store.status == "ready", 
+            Store.provisioning_started_at.isnot(None),
+            Store.provisioning_completed_at.isnot(None)
+        )
+        result = await db.execute(stmt)
+        stores = result.scalars().all()
+        
+        if stores:
+            durations = [
+                (s.provisioning_completed_at - s.provisioning_started_at).total_seconds()
+                for s in stores
+            ]
+            avg_time = sum(durations) / len(durations)
+    except Exception as e:
+        print(f"Metrics calc error: {e}")
         avg_time = "N/A"
 
     return {
@@ -92,5 +93,5 @@ async def get_platform_metrics(db: AsyncSession = Depends(get_db)):
         "failed_stores": failed_stores,
         "active_namespaces": active_namespaces,
         "avg_provisioning_time_seconds": round(avg_time, 2) if isinstance(avg_time, (int, float)) else avg_time,
-        "success_rate": round(((total_stores - failed_stores) / total_stores * 100), 2) if total_stores > 0 else 100
+        "success_rate": round(((total_stores - failed_stores) / total_stores * 100), 1) if total_stores > 0 else 100
     }
