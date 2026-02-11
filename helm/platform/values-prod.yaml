@@ -11,43 +11,40 @@ platform:
     replicas: 2
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
-        cpu: 1000m
-        memory: 1Gi
+        cpu: 500m
+        memory: 512Mi
     env:
-      DATABASE_URL: "postgresql://urumi:${DB_PASSWORD}@platform-db:5432/urumi"
+      DATABASE_URL: "postgresql+asyncpg://urumi:REPLACE_WITH_SECURE_PASSWORD@platform-db:5432/urumi"
       MAX_STORES_PER_USER: "10"
-      PROVISIONING_TIMEOUT_MINUTES: "15"
+      PROVISIONING_TIMEOUT_MINUTES: "20"
   
   dashboard:
     replicas: 2
     resources:
       requests:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 50m
+        memory: 64Mi
       limits:
-        cpu: 500m
-        memory: 256Mi
+        cpu: 200m
+        memory: 128Mi
   
   postgres:
     storage:
-      size: 20Gi
-      storageClass: ""
+      size: 10Gi
+      storageClass: "local-path" # Change to "longhorn" or cloud-sc for production
     credentials:
-      password: ${DB_PASSWORD}
+      password: "REPLACE_WITH_SECURE_PASSWORD"
 
 ingress:
   enabled: true
   className: traefik
-  tls:
-    enabled: true
-    certManager: true
-    issuer: letsencrypt-prod
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
   hosts:
     - host: dashboard.urumistores.com
       paths:
@@ -56,4 +53,9 @@ ingress:
     - host: api.urumistores.com
       paths:
         - path: /
-          service: urumi-api
+          service: urumi-platform-api
+  tls:
+    - secretName: urumi-platform-tls
+      hosts:
+        - dashboard.urumistores.com
+        - api.urumistores.com
