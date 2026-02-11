@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import StoreList from './components/StoreList';
 import StoreDetail from './components/StoreDetail';
 import { Sidebar } from './components/Sidebar';
+import Observability from './components/Observability';
+import AuditLogView from './components/AuditLogView';
 
 const queryClient = new QueryClient();
 
@@ -16,9 +18,8 @@ function App() {
             <Routes>
               <Route path="/" element={<StoreList />} />
               <Route path="/stores/:id" element={<StoreDetail />} />
-              {/* Simple placeholders to match original menu */}
-              <Route path="/observability" element={<div className="text-sm text-muted-foreground">Observability dashboard coming soon.</div>} />
-              <Route path="/audit-logs" element={<div className="text-sm text-muted-foreground">Audit logs view coming soon.</div>} />
+              <Route path="/observability" element={<Observability />} />
+              <Route path="/audit-logs" element={<AuditLogView />} />
             </Routes>
           </main>
         </div>

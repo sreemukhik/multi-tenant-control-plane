@@ -4,7 +4,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.config import settings
-from app.api import stores, health, auth
+from app.api import stores, health, auth, observability
 from app.utils.limiter import limiter
 import structlog
 
@@ -41,6 +41,7 @@ Instrumentator().instrument(app).expose(app)
 
 # Routes
 app.include_router(health.router, tags=["Health"])
+app.include_router(observability.router, prefix="/api/v1/observability", tags=["Observability"])
 app.include_router(stores.router, prefix="/api/v1/stores", tags=["Stores"])
 # app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"]) # Optional
 

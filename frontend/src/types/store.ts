@@ -2,7 +2,7 @@ export interface StoreModel {
     id: string;
     name: string;
     engine: 'woocommerce' | 'medusa';
-    status: 'requested' | 'provisioning' | 'ready' | 'failed' | 'deleting';
+    status: 'requested' | 'provisioning' | 'provisioning_requested' | 'ready' | 'failed' | 'deleting';
     namespace: string;
     domain?: string;
     admin_url?: string;
@@ -12,6 +12,7 @@ export interface StoreModel {
     provisioning_started_at?: string;
     provisioning_completed_at?: string;
     created_at: string;
+    updated_at: string;
 }
 
 export interface CreateStoreRequest {

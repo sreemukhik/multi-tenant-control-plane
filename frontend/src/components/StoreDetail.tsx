@@ -56,20 +56,36 @@ export default function StoreDetail() {
     };
 
     const getProvisioningTime = () => {
-        if (store.status === 'provisioning' || store.status === 'requested') {
-            return "Provisioning...";
+        if (store.status === 'provisioning' || store.status === 'requested' || store.status === 'provisioning_requested') {
+            const start = new Date(store.created_at).getTime();
+            const now = new Date().getTime();
+            const diffMs = now - start;
+            const mins = Math.floor(diffMs / 60000);
+            const secs = Math.floor((diffMs % 60000) / 1000);
+            return `Provisioning (${mins}m ${secs}s...)`;
         }
-        if (!store.provisioning_started_at || !store.provisioning_completed_at) return "N/A";
+
+        if (store.status === 'failed') return "Failed";
+
+        // Fallback to created_at if provisioning_started_at is missing
+        const startTime = store.provisioning_started_at || store.created_at;
+        // Use provisioning_completed_at primarily, then updated_at fallback for ready stores
+        const endTime = store.provisioning_completed_at || (store.status === 'ready' ? store.updated_at : null);
+
+        if (!startTime || !endTime) return "N/A";
 
         try {
-            const start = new Date(store.provisioning_started_at).getTime();
-            const end = new Date(store.provisioning_completed_at).getTime();
+            const start = new Date(startTime).getTime();
+            const end = new Date(endTime).getTime();
             const diffMs = end - start;
 
-            if (diffMs < 0) return "N/A";
+            if (isNaN(diffMs) || diffMs < 0) return "N/A";
 
             const mins = Math.floor(diffMs / 60000);
             const secs = Math.floor((diffMs % 60000) / 1000);
+
+            if (mins === 0 && secs === 0) return "< 1s";
+            if (mins === 0) return `${secs}s`;
             return `${mins}m ${secs}s`;
         } catch (e) {
             return "N/A";
@@ -97,7 +113,7 @@ export default function StoreDetail() {
                         <div className="flex items-center">
                             <div className="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full flex items-center text-xs font-bold tracking-wider">
                                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mr-2" />
-                                {store.status.toUpperCase()}
+                                {(store.status === 'provisioning_requested' || store.status === 'requested') ? 'PROVISIONING' : store.status.toUpperCase()}
                             </div>
                         </div>
                     </div>

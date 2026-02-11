@@ -30,8 +30,9 @@ class StoreResponse(StoreBase):
     error_message: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    provisioning_started_at: Optional[datetime] = None
     provisioning_completed_at: Optional[datetime] = None
-    provisioning_timeline: Optional[List[dict]] = None # Detailed timeline data would be fetched separately typically, or embedded
+    provisioning_timeline: Optional[List[dict]] = None
     activity_log: Optional[List[dict]] = None
 
     class Config:

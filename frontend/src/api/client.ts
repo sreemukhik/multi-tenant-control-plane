@@ -34,4 +34,19 @@ export const storeApi = {
         const response = await apiClient.get<AuditLogModel[]>(`/stores/${id}/logs`);
         return response.data;
     },
+
+    globalLogs: async (): Promise<AuditLogModel[]> => {
+        const response = await apiClient.get<AuditLogModel[]>('/stores/audit-logs');
+        return response.data;
+    },
+
+    health: async (): Promise<any> => {
+        const response = await apiClient.get('/observability/health');
+        return response.data;
+    },
+
+    metrics: async (): Promise<any> => {
+        const response = await apiClient.get('/observability/metrics');
+        return response.data;
+    },
 };

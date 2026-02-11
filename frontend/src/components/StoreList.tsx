@@ -107,11 +107,13 @@ export default function StoreList() {
                                         <span className={cn(
                                             "h-2.5 w-2.5 rounded-full mr-2",
                                             store.status === 'ready' ? "bg-blue-500" :
-                                                store.status === 'provisioning' ? "bg-yellow-400 animate-pulse" :
+                                                (store.status === 'provisioning' || store.status === 'provisioning_requested') ? "bg-yellow-400 animate-pulse" :
                                                     store.status === 'failed' ? "bg-red-500" : "bg-gray-300"
                                         )} />
                                         <span className="text-sm font-medium text-blue-600 capitalize">
-                                            {store.status === 'ready' ? 'Ready' : store.status}
+                                            {store.status === 'ready' ? 'Ready' :
+                                                (store.status === 'provisioning_requested' || store.status === 'requested') ? 'Provisioning' :
+                                                    store.status}
                                         </span>
                                     </div>
                                 </td>

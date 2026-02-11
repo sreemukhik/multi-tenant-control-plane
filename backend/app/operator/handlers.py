@@ -159,7 +159,7 @@ async def create_store(spec, name, meta, status, **kwargs):
             store.status = "provisioning"
             store.provisioning_started_at = datetime.datetime.now(datetime.timezone.utc)
             await db.commit()
-            await log_step("operator.provision_started", {"crd_name": name})
+            await log_step("activity.provision_started", {"crd_name": name})
 
         try:
             engine = spec.get('engine', 'woocommerce')
@@ -199,7 +199,7 @@ async def create_store(spec, name, meta, status, **kwargs):
                  "mariadb.primary.resources.limits.memory": "256Mi",
             }
             
-            await log_step("operator.helm_install")
+            await log_step("activity.helm_install")
             await helm_install(
                 release_name=release_name,
                 chart_path=chart_path,
@@ -211,11 +211,11 @@ async def create_store(spec, name, meta, status, **kwargs):
             )
 
             # Apply Expert Hardening
-            await log_step("operator.applying_hardening")
+            await log_step("activity.applying_hardening")
             await apply_hardening(namespace)
             
             if engine == "woocommerce":
-                await log_step("operator.configure_woocommerce")
+                await log_step("activity.configure_woocommerce")
                 
                 pod_name = ""
                 for _ in range(40):
@@ -231,7 +231,7 @@ async def create_store(spec, name, meta, status, **kwargs):
                 async def exec_wp(wp_args):
                     return await run_kubectl(["exec", "-n", namespace, pod_name, "-c", "wordpress", "--"] + wp_args)
 
-                await log_step("operator.waiting_wp_core")
+                await log_step("activity.waiting_wp_core")
                 core_ready = False
                 for _ in range(30):
                     try:
@@ -244,13 +244,13 @@ async def create_store(spec, name, meta, status, **kwargs):
                 if not core_ready:
                     raise kopf.TemporaryError("WordPress core not ready yet", delay=20)
 
-                await log_step("operator.installing_plugins")
+                await log_step("activity.installing_plugins")
                 # Install and activate. Using install --activate to be idempotent and safe.
                 await exec_wp(["wp", "plugin", "install", "woocommerce", "--activate", "--allow-root"])
                 await exec_wp(["wp", "theme", "install", "storefront", "--activate", "--allow-root"])
                 
                 # CRITICAL: Wait for WooCommerce to be CLI-ready (it takes time after activation)
-                await log_step("operator.waiting_woocommerce_api")
+                await log_step("activity.waiting_woocommerce_api")
                 wc_ready = False
                 for _ in range(30):
                     try:
@@ -286,7 +286,7 @@ async def create_store(spec, name, meta, status, **kwargs):
                         await exec_wp(["wp", "widget", "delete"] + widgets.split() + ["--allow-root"])
                 except: pass
 
-                await log_step("operator.seeding_products")
+                await log_step("activity.seeding_products")
 
                 # First, ensure WooCommerce CLI package is installed
                 try:
@@ -374,7 +374,7 @@ async def create_store(spec, name, meta, status, **kwargs):
                 if created_count == 0:
                     raise Exception(f"Failed to create any products (0/{len(products)}). WooCommerce may not be properly configured.")
 
-                await log_step("operator.products_created", {"count": created_count, "failed": failed_products})
+                await log_step("activity.products_created", {"count": created_count, "failed": failed_products})
 
                 php_fix = """
 if (!function_exists('WC')) {
@@ -426,7 +426,7 @@ wc_delete_product_transients();
                 import base64
                 b64_script = base64.b64encode(php_fix.encode('utf-8')).decode('utf-8')
                 await exec_wp(["sh", "-c", f"echo {b64_script} | base64 -d > /tmp/fix_store.php"])
-                await log_step("operator.configuring_payments")
+                await log_step("activity.configuring_payments")
                 try:
                     # Run the shipping/gateway cleanup script
                     await exec_wp(["wp", "eval-file", "/tmp/fix_store.php", "--allow-root"])
@@ -439,7 +439,7 @@ wc_delete_product_transients();
                 except Exception as e:
                     logger.error("payment_config_failed", error=str(e))
 
-                await log_step("operator.configuration_completed")
+                await log_step("activity.configuration_completed")
 
             if store:
                 if store.status != "ready":
@@ -451,7 +451,7 @@ wc_delete_product_transients();
                 store.admin_password = wp_password
                 await db.commit()
                 
-                await log_step("operator.completed", {
+                await log_step("activity.completed", {
                     "url": store.storefront_url, 
                     "admin_user": "admin", 
                     "completed_at": store.provisioning_completed_at.isoformat() if store.provisioning_completed_at else None
@@ -465,6 +465,10 @@ wc_delete_product_transients();
                 store.status = "failed"
                 store.error_message = str(e)
                 await db.commit()
+            
+            if "timed out" in str(e).lower() or "timeout" in str(e).lower():
+                await log_step("system.timeout.triggered", {"error": str(e)})
+            
             raise kopf.TemporaryError(f"Provisioning failed: {e}", delay=60)
 
 @kopf.on.delete('stores.urumi.io')

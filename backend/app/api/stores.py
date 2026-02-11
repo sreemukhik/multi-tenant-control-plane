@@ -24,16 +24,18 @@ from typing import Any
 @router.get("/audit-logs")
 async def get_audit_logs(limit: int = 50, db: AsyncSession = Depends(get_db)):
     from app.models import AuditLog
-    # Fetch real audit logs from database, sorted by newest first
-    result = await db.execute(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit))
+    # Fetch high-level audit logs (exclude technical activity logs)
+    stmt = select(AuditLog).where(~AuditLog.action.like('activity.%')).order_by(AuditLog.created_at.desc()).limit(limit)
+    result = await db.execute(stmt)
     logs = result.scalars().all()
-    # Convert to dicts manually to avoid Pydantic validation issues
+    
     return [
         {
             "id": log.id,
             "action": log.action,
             "resource_type": log.resource_type,
             "resource_id": log.resource_id,
+            "ip_address": log.ip_address,
             "created_at": log.created_at.isoformat() if log.created_at else None,
             "metadata_": log.metadata_
         }
@@ -48,25 +50,44 @@ async def create_store(
     background_tasks: BackgroundTasks, 
     db: AsyncSession = Depends(get_db)
 ):
+    from app.models import AuditLog
     # Quota Check
-    # Simplified: Count total stores for now since we don't have auth user_id enforced yet
-    # In a real scenario with auth, we would filter by user_id
     result = await db.execute(select(func.count()).select_from(Store).where(Store.status != "failed"))
     count = result.scalar()
     
     if count >= settings.MAX_STORES_PER_USER:
+         # Log quota failure
+         log = AuditLog(
+             action="quota.check.failed",
+             resource_type="system",
+             ip_address=request.client.host,
+             metadata_={"requested_name": store_in.name, "current_count": count}
+         )
+         db.add(log)
+         await db.commit()
          raise HTTPException(status_code=403, detail=f"Quota exceeded. Max {settings.MAX_STORES_PER_USER} stores allowed.")
     
     new_store = Store(
         name=store_in.name,
         engine=store_in.engine,
-        status="requested", # Initial state
-        namespace=f"store-{str(uuid.uuid4())[:8]}", # Temporary namespace generation
-        user_id=None # No auth for now
+        status="requested",
+        namespace=f"store-{str(uuid.uuid4())[:8]}",
+        user_id=None
     )
     db.add(new_store)
     await db.commit()
     await db.refresh(new_store)
+    
+    # Audit Log: user.create_store
+    log = AuditLog(
+        action="user.create_store",
+        resource_type="store",
+        resource_id=str(new_store.id),
+        ip_address=request.client.host,
+        metadata_={"name": store_in.name, "engine": store_in.engine}
+    )
+    db.add(log)
+    await db.commit()
     
     # Trigger background provisioning task
     from app.services.orchestrator import provision_store
@@ -83,13 +104,24 @@ async def get_store(store_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return store
 
 @router.delete("/{store_id}")
-async def delete_store(store_id: uuid.UUID, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def delete_store(store_id: uuid.UUID, request: Request, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+    from app.models import AuditLog
     result = await db.execute(select(Store).where(Store.id == store_id))
     store = result.scalars().first()
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
     store.status = "deleting"
+    
+    # Audit Log: user.delete_store
+    log = AuditLog(
+        action="user.delete_store",
+        resource_type="store",
+        resource_id=str(store.id),
+        ip_address=request.client.host,
+        metadata_={"name": store.name}
+    )
+    db.add(log)
     await db.commit()
     
     # Trigger background deletion task here
@@ -127,9 +159,11 @@ async def retry_store(
 @router.get("/{store_id}/logs")
 async def get_store_logs(store_id: uuid.UUID, limit: int = 50, db: AsyncSession = Depends(get_db)):
     from app.models import AuditLog
-    # Fetch logs for specific store
-    # Ensure resource_id comparison works (string vs uuid)
-    stmt = select(AuditLog).where(AuditLog.resource_id == str(store_id)).order_by(AuditLog.created_at.asc()).limit(limit)
+    # Fetch technical activity logs for specific store
+    stmt = select(AuditLog).where(
+        AuditLog.resource_id == str(store_id),
+        (AuditLog.action.like('activity.%') | AuditLog.action.like('system.%'))
+    ).order_by(AuditLog.created_at.asc()).limit(limit)
     result = await db.execute(stmt)
     logs = result.scalars().all()
     return logs
