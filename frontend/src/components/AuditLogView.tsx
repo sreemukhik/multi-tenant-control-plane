@@ -3,7 +3,7 @@ import { storeApi } from '../api/client';
 import { Loader2, Shield, User, Server, AlertTriangle, Globe } from 'lucide-react';
 
 export default function AuditLogView() {
-    const { data: logs, isLoading, error } = useQuery({
+    const { data: logs, isPending: isLoading, error } = useQuery({
         queryKey: ['global-audit-logs'],
         queryFn: storeApi.globalLogs,
         refetchInterval: 10000,
@@ -25,9 +25,9 @@ export default function AuditLogView() {
     };
 
     const getActionIcon = (action: string) => {
-        if (action.includes('error') || action.includes('failed')) return <AlertTriangle className="h-4 w-4 text-red-500" />;
-        if (action.includes('user.')) return <User className="h-4 w-4 text-blue-500" />;
-        if (action.includes('quota')) return <Shield className="h-4 w-4 text-orange-500" />;
+        if (action?.includes('error') || action?.includes('failed')) return <AlertTriangle className="h-4 w-4 text-red-500" />;
+        if (action?.includes('user.')) return <User className="h-4 w-4 text-blue-500" />;
+        if (action?.includes('quota')) return <Shield className="h-4 w-4 text-orange-500" />;
         return <Server className="h-4 w-4 text-gray-500" />;
     };
 

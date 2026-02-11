@@ -3,13 +3,13 @@ import { storeApi } from '../api/client';
 import { Loader2, Activity, Database, Cloud, ShieldCheck, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function Observability() {
-    const { data: health, isLoading: healthLoading } = useQuery({
+    const { data: health, isPending: healthLoading } = useQuery({
         queryKey: ['health'],
         queryFn: storeApi.health,
         refetchInterval: 10000,
     });
 
-    const { data: metrics, isLoading: metricsLoading } = useQuery({
+    const { data: metrics, isPending: metricsLoading } = useQuery({
         queryKey: ['metrics'],
         queryFn: storeApi.metrics,
         refetchInterval: 10000,
@@ -19,14 +19,14 @@ export default function Observability() {
 
     const HealthCard = ({ title, status, icon: Icon }: { title: string, status: string, icon: any }) => (
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-start space-x-4">
-            <div className={`p-3 rounded-lg ${status.includes('Connected') || status.includes('Available') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            <div className={`p-3 rounded-lg ${(status?.includes('Connected') || status?.includes('Available')) ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
                 <Icon className="h-6 w-6" />
             </div>
             <div>
                 <p className="text-sm font-medium text-gray-500">{title}</p>
                 <div className="flex items-center mt-1">
                     <p className="text-xl font-bold text-gray-900">{status}</p>
-                    {status.includes('Connected') || status.includes('Available') ? (
+                    {status?.includes('Connected') || status?.includes('Available') ? (
                         <CheckCircle2 className="h-4 w-4 text-green-500 ml-2" />
                     ) : (
                         <AlertCircle className="h-4 w-4 text-red-500 ml-2" />

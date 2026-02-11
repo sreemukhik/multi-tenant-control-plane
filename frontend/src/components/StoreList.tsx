@@ -13,7 +13,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function StoreList() {
-    const { data: stores, isLoading, error, refetch } = useQuery({
+    const { data: stores, isPending: isLoading, error, refetch } = useQuery({
         queryKey: ['stores'],
         queryFn: storeApi.list,
         refetchInterval: 5000,

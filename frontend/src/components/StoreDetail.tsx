@@ -16,7 +16,7 @@ export default function StoreDetail() {
     const navigate = useNavigate();
     const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
-    const { data: store, isLoading: storeLoading } = useQuery({
+    const { data: store, isPending: storeLoading } = useQuery({
         queryKey: ['store', id],
         queryFn: () => storeApi.get(id!),
         enabled: !!id,
@@ -26,7 +26,7 @@ export default function StoreDetail() {
         }
     });
 
-    const { data: logs, isLoading: logsLoading } = useQuery({
+    const { data: logs, isPending: logsLoading } = useQuery({
         queryKey: ['store-logs', id],
         queryFn: () => storeApi.logs(id!),
         enabled: !!id,
