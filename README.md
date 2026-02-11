@@ -39,18 +39,17 @@ For Windows users (PowerShell):
 ./scripts/setup-local.ps1
 ```
 
-### 2. Configure Local DNS
+### 2. Platform Access
 
-Add the following entries to your host file (/etc/hosts or C:\Windows\System32\drivers\etc\hosts):
+After running the setup script, the platform will be available via the Ingress controller. Access details are dynamically managed and provided in the script output.
 
-```text
-127.0.0.1 dashboard.k8s.local api.k8s.local
-```
+## Core Features
 
-### 3. Access the Platform
-
-*   Dashboard: http://dashboard.k8s.local
-*   API Documentation: http://api.k8s.local/docs
+*   **Automated Multi-Tenant Provisioning**: Isolated namespaces for every store with dedicated MariaDB instances.
+*   **Live Observability Dashboard**: Real-time tracking of resource usage, provisioning status, and precision build timers.
+*   **Comprehensive Audit Logging**: Every administrative action and provisioning step is logged for transparency and debugging.
+*   **Enterprise-Grade Hardening**: Automatic application of Kubernetes ResourceQuotas and NetworkPolicies for tenant isolation.
+*   **Idempotent Workflows**: Robust provisioning logic designed to handle interruptions and retries gracefully.
 
 ## VPS / Production Setup Instructions (k3s)
 
