@@ -99,7 +99,7 @@ helm upgrade --install multi-tenant-platform ./helm/platform \
 
 ---
 
-## 🛡️ Platform Engineering & Guardrails
+##  Platform Engineering & Guardrails
 
 To meet the requirements of a production-grade multi-tenant system, we implement several "platform-first" features:
 
@@ -133,7 +133,7 @@ To meet the requirements of a production-grade multi-tenant system, we implement
 
 ---
 
-## 🏗️ System Design & Tradeoffs
+##  System Design & Tradeoffs
 
 ### Architecture Choice: Controller-Operator Pattern
 *   **Control Plane (FastAPI):** Handles lightweight API requests and persists "intent" (CRDs).
@@ -144,7 +144,7 @@ To meet the requirements of a production-grade multi-tenant system, we implement
 *   **Idempotency:** The operator logic is re-runnable. If a step fails, it retries without duplicating resources.
 *   **Cleanup:** We use **Kubernetes Finalizers**. Deleting a store triggers a graceful cleanup of the namespace, PVC, and database before the object is removed.
 
-### 🛡️ Failure Scenarios & Recovery
+###  Failure Scenarios & Recovery
 Nexus is built to tolerate infrastructure instability:
 - **Helm Install Fails:** Status is marked as `Failed` with the exact error reason surfaced to the UI for user intervention.
 - **Partial Namespace Creation:** Reconciliation resumes automatically, completing only the missing resources.
