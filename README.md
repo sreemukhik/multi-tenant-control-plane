@@ -1,4 +1,4 @@
-# Urumi Store Platform
+#  Multi-tenant Store Platform
 
 Urumi is an enterprise-grade provisioning platform for multi-tenant WooCommerce hosting on Kubernetes. It provides a full-stack solution for managing store lifecycles, from automated deployment to health monitoring and audit logging.
 
