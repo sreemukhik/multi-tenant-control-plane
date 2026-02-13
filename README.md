@@ -153,7 +153,7 @@ Nexus is built to tolerate infrastructure instability:
 
 ---
 
-## � Production Considerations (Local vs. Prod)
+##  Production Considerations (Local vs. Prod)
 - **DNS:** Wildcard DNS (`*.example.com`) replaces `*.localhost`.
 - **TLS:** Production uses `Cert-Manager` with Let's Encrypt for automatic HTTPS.
 - **Storage:** Upgrade from `local-path` to cloud-native CSI drivers (e.g., `gp3`, `longhorn`).
