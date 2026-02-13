@@ -1,6 +1,6 @@
-# Nexus Store Platform
+# Multi Tenant Control Plane
 
-Nexus is an enterprise-grade provisioning platform for multi-tenant WooCommerce hosting on Kubernetes. It provides a full-stack solution for managing store lifecycles, from automated deployment to health monitoring and audit logging.
+Multi Tenant Control Plane is an enterprise-grade provisioning platform for multi-tenant WooCommerce hosting on Kubernetes. It provides a full-stack solution for managing store lifecycles, from automated deployment to health monitoring and audit logging.
 
 ## Directory Structure & Source Code
 
@@ -10,7 +10,7 @@ Nexus is an enterprise-grade provisioning platform for multi-tenant WooCommerce 
     *   **API:** FastAPI service for handling user requests and maintaining state.
     *   **Orchestration:** `backend/app/operator/` contains the Kopf-based operator logic that manages Kubernetes resources.
 *   **Helm Charts:** `helm/`
-    *   `helm/platform/`: Chart for deploying the Nexus control plane (API + Dashboard).
+    *   `helm/platform/`: Chart for deploying the Multi Tenant Control Plane (API + Dashboard).
     *   `helm/store-engines/`: Charts used to provision individual stores (e.g., WooCommerce).
 *   **Scripts:** `scripts/`
     *   Automation scripts for local development (`setup-local.sh`, `setup-local.ps1`) and other utilities.
@@ -40,7 +40,7 @@ chmod +x scripts/setup-local.sh
 ```
 
 This script will:
-1.  Create a k3d cluster named `nexus-cluster`.
+1.  Create a k3d cluster named `multi-tenant-cluster`.
 2.  Build the backend and frontend Docker images.
 3.  Import images into the cluster.
 4.  Install the `helm/platform` chart.
@@ -74,12 +74,12 @@ You need to build the images locally and push them to a container registry (e.g.
 export REGISTRY=ghcr.io/your-username
 
 # Build
-docker build -t $REGISTRY/nexus-backend:latest backend/
-docker build -t $REGISTRY/nexus-dashboard:latest frontend/
+docker build -t $REGISTRY/multi-tenant-backend:latest backend/
+docker build -t $REGISTRY/multi-tenant-dashboard:latest frontend/
 
 # Push
-docker push $REGISTRY/nexus-backend:latest
-docker push $REGISTRY/nexus-dashboard:latest
+docker push $REGISTRY/multi-tenant-backend:latest
+docker push $REGISTRY/multi-tenant-dashboard:latest
 ```
 
 ### 3. Configure Helm for Production
@@ -91,8 +91,8 @@ Edit `helm/platform/values-prod.yaml` to match your environment:
 
 ### 4. Deploy via Helm
 ```bash
-helm upgrade --install nexus-platform ./helm/platform \
-  --namespace nexus-platform \
+helm upgrade --install multi-tenant-platform ./helm/platform \
+  --namespace multi-tenant-platform \
   --create-namespace \
   --values ./helm/platform/values-prod.yaml
 ```
@@ -106,7 +106,7 @@ Point the following DNS records to your VPS IP:
 ## How to Create a Store and Place an Order
 
 ### 1. Create a Store
-1.  Log in to the **Nexus Dashboard**.
+1.  Log in to the **Dashboard**.
 2.  Navigate to the **Stores** tab.
 3.  Click **"New Store"**.
 4.  Enter a unique store name (e.g., `demo-store`) and select the plan/engine (WooCommerce).
