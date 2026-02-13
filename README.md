@@ -1,144 +1,145 @@
-#  Multi-tenant Store Platform
+# Nexus Store Platform
 
-Urumi is an enterprise-grade provisioning platform for multi-tenant WooCommerce hosting on Kubernetes. It provides a full-stack solution for managing store lifecycles, from automated deployment to health monitoring and audit logging.
+Nexus is an enterprise-grade provisioning platform for multi-tenant WooCommerce hosting on Kubernetes. It provides a full-stack solution for managing store lifecycles, from automated deployment to health monitoring and audit logging.
 
-## Directory Structure
+## Directory Structure & Source Code
 
-*   backend/: FastAPI control plane and Kubernetes Operator (Kopf).
-*   frontend/: React-based administrative dashboard.
-*   helm/: Deployment charts for the platform and store engines.
-*   scripts/: Automation scripts for local and production environment setup.
-
-## Technical Stack
-
-*   Backend: Python, FastAPI, SQLAlchemy, Kopf (Kubernetes Operator Framework).
-*   Frontend: React, TypeScript, Vite, Tailwind CSS, TanStack Query.
-*   Infrastructure: Kubernetes (k3d/k3s), Helm, PostgreSQL, MariaDB (for stores).
-*   Store Engine: WordPress with WooCommerce (via Bitnami Helm charts).
+*   **Dashboard (Frontend):** `frontend/`
+    *   React-based administrative dashboard using Vite, Tailwind CSS, and TanStack Query.
+*   **Control Plane (Backend):** `backend/app/`
+    *   **API:** FastAPI service for handling user requests and maintaining state.
+    *   **Orchestration:** `backend/app/operator/` contains the Kopf-based operator logic that manages Kubernetes resources.
+*   **Helm Charts:** `helm/`
+    *   `helm/platform/`: Chart for deploying the Nexus control plane (API + Dashboard).
+    *   `helm/store-engines/`: Charts used to provision individual stores (e.g., WooCommerce).
+*   **Scripts:** `scripts/`
+    *   Automation scripts for local development (`setup-local.sh`, `setup-local.ps1`) and other utilities.
 
 ## Local Setup Instructions
 
 ### Prerequisites
-
 *   Docker Desktop or Docker Engine
-*   k3d (Kubernetes in Docker)
+*   k3d (Kubernetes in Docker) or similar local K8s cluster
 *   Helm v3+
 *   kubectl
+*   Python 3.10+ (for local backend development)
 
-### 1. Initialize the Cluster
+### Quick Start (Automated)
 
-Run the provided setup script to create a k3d cluster and build/import the necessary component images:
+We provide automated scripts to spin up a local development environment using k3d.
 
+**For Linux/Mac:**
 ```bash
 chmod +x scripts/setup-local.sh
 ./scripts/setup-local.sh
 ```
 
-For Windows users (PowerShell):
+**For Windows (PowerShell):**
 ```powershell
 ./scripts/setup-local.ps1
 ```
 
-### 2. Platform Access
+This script will:
+1.  Create a k3d cluster named `nexus-cluster`.
+2.  Build the backend and frontend Docker images.
+3.  Import images into the cluster.
+4.  Install the `helm/platform` chart.
+5.  Wait for all pods to be ready.
 
-After running the setup script, the platform will be available via the Ingress controller. Access details are dynamically managed and provided in the script output.
-
-## Core Features
-
-*   **Automated Multi-Tenant Provisioning**: Isolated namespaces for every store with dedicated MariaDB instances.
-*   **Live Observability Dashboard**: Real-time tracking of resource usage, provisioning status, and precision build timers.
-*   **Comprehensive Audit Logging**: Every administrative action and provisioning step is logged for transparency and debugging.
-*   **Enterprise-Grade Hardening**: Automatic application of Kubernetes ResourceQuotas and NetworkPolicies for tenant isolation.
-*   **Idempotent Workflows**: Robust provisioning logic designed to handle interruptions and retries gracefully.
+### Access Info
+Once the script completes, the platform is available at:
+*   **Dashboard:** http://dashboard.localhost (or mapped port provided in output)
+*   **API:** http://api.localhost/docs
 
 ## VPS / Production Setup Instructions (k3s)
 
-The production setup assumes a clean Linux VPS (e.g., Ubuntu 22.04).
+This guide assumes a clean Linux VPS (Ubuntu 22.04 recommended) with a public IP and a domain name.
 
 ### 1. Install k3s
-
+Install a lightweight Kubernetes distribution:
 ```bash
 curl -sfL https://get.k3s.io | sh -
-# Ensure k3s is accessible
+# Configure access
 mkdir -p ~/.kube
 sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
 sudo chown $USER:$USER ~/.kube/config
+export KUBECONFIG=~/.kube/config
 ```
 
 ### 2. Build and Push Images
-
-Build the platform images and push them to your container registry (e.g., GitHub Packages or Docker Hub):
-
-```bash
-docker build -t your-reg/urumi-platform-api:v1 backend/
-docker build -t your-reg/urumi-dashboard:v1 frontend/
-docker push your-reg/urumi-platform-api:v1
-docker push your-reg/urumi-dashboard:v1
-```
-
-### 3. Deploy via Helm
-
-Update helm/platform/values-prod.yaml with your domain names, database credentials, and container registry paths.
+You need to build the images locally and push them to a container registry (e.g., Docker Hub, GitHub Container Registry).
 
 ```bash
-helm upgrade --install urumi-platform ./helm/platform \
-    --namespace urumi-platform \
-    --create-namespace \
-    --values ./helm/platform/values-prod.yaml
+# Export your registry
+export REGISTRY=ghcr.io/your-username
+
+# Build
+docker build -t $REGISTRY/nexus-backend:latest backend/
+docker build -t $REGISTRY/nexus-dashboard:latest frontend/
+
+# Push
+docker push $REGISTRY/nexus-backend:latest
+docker push $REGISTRY/nexus-dashboard:latest
 ```
 
-### 4. Configure External DNS
+### 3. Configure Helm for Production
+Edit `helm/platform/values-prod.yaml` to match your environment:
+*   **Domain:** Update `global.domain` to your actual domain (e.g., `example.com`).
+*   **Images:** Update `image.repository` to match your registry URLs.
+*   **Storage:** Change `storageClass` if you are using a specific provider (e.g., `longhorn`, `gp2`).
+*   **Secrets:** Update database passwords.
 
-Point your base domain and the following subdomains to your VPS public IP:
+### 4. Deploy via Helm
+```bash
+helm upgrade --install nexus-platform ./helm/platform \
+  --namespace nexus-platform \
+  --create-namespace \
+  --values ./helm/platform/values-prod.yaml
+```
 
-*   dashboard.yourdomain.com
-*   api.yourdomain.com
-*   *.yourdomain.com (Wildcard for store namespaces)
+### 5. DNS Configuration
+Point the following DNS records to your VPS IP:
+*   `api.example.com` (A Record)
+*   `dashboard.example.com` (A Record)
+*   `*.example.com` (Wildcard A Record for customer stores)
 
-## Usage Guide
+## How to Create a Store and Place an Order
 
-### Creating a Store
+### 1. Create a Store
+1.  Log in to the **Nexus Dashboard**.
+2.  Navigate to the **Stores** tab.
+3.  Click **"New Store"**.
+4.  Enter a unique store name (e.g., `demo-store`) and select the plan/engine (WooCommerce).
+5.  Click **Create**.
+6.  The status will change to `Provisioning`. The operator is now creating a namespace, database, and installing WordPress in the background.
+7.  Wait for the status to become `Ready`.
 
-1.  Navigate to the Stores section in the Dashboard.
-2.  Click "New Store".
-3.  Enter a unique name and select the engine (currently WooCommerce).
-4.  The platform will immediately mark the status as "Provisioning".
-5.  Internal logic will create a dedicated Kubernetes namespace, apply resource quotas, install the Helm release, and seed initial products.
+### 2. Place an Order
+1.  Once `Ready`, click the **Store URL** (e.g., `http://demo-store.example.com` or `.localhost`).
+2.  Browse the storefront. The provisioning process automatically seeds example products.
+3.  Add a product (e.g., "Premium T-Shirt") to your cart.
+4.  Proceed to **Checkout**.
+5.  Enter sample billing details.
+6.  Select **Cash on Delivery** (enabled by default for testing).
+7.  Place the order.
+8.  You can verify the order in the WordPress Admin panel (credentials are stored in Kubernetes Secrets).
 
-### Placing an Order
-
-1.  Once the store status is "Ready", click "Details".
-2.  Open the Storefront URL provided in the metadata section.
-3.  Browse the seeded products (e.g., Premium Cotton T-Shirt).
-4.  Add a product to the cart and proceed to checkout.
-5.  The platform activates "Cash on Delivery" by default for all new stores to facilitate immediate testing.
-6.  Complete the checkout process to place a test order.
-
-## System Design and Tradeoffs
+## System Design & Tradeoffs
 
 ### Architecture Choice
+We utilize a **Controller-Operator Pattern**:
+*   **Control Plane (FastAPI):** Handles lightweight tasks: API requests, authentication, and persisting intent (Store CRDs) to the database/Kubernetes.
+*   **Operator (Kopf):** Runs asynchronously to handle heavy lifting. It watches for `Store` CRD changes and executes idempotent provisioning loops (Helm installs, DB creation, file operations).
+*   **Tradeoff:** This separates user-facing latency from infrastructure latency. API responses are instant ("Provisioning started"), while the complex K8s operations happen in the background with robust retry mechanisms.
 
-The platform utilizes a hybrid Control Plane + Kubernetes Operator approach:
+### Idempotency & Failure Handling
+*   **Idempotency:** The operator logic is designed to be re-runnable. If a step fails (e.g., Helm upgrade), the operator retries from the current state without duplicating resources.
+*   **Failure Handling:** We use Kopf's built-in retry backoff. Temporary network blips will just cause a delayed success. Permanent failures are logged to the `Store` status for the user to see.
+*   **Cleanup:** We use Kubernetes **Finalizers**. When a `Store` is deleted, the operator intercepts the deletion, uninstalls the Helm chart, deletes the namespace and database volume, and only then allows the `Store` object to be removed. This prevents orphaned resources.
 
-*   FastAPI Control Plane: Manages the REST interface and state persistence in PostgreSQL.
-*   Custom Resource Definitions (CRD): When a store is requested, the API creates a 'Store' custom resource in Kubernetes.
-*   Kopf-based Operator: Monitors 'Store' resources and executes the heavy-lifting (Helm logic, WooCommerce CLI configuration, hardening) asynchronously.
-
-This separation ensures the API remains responsive while complex provisioning logic runs reliably in the background with automatic retries.
-
-### Idempotency and Failure Handling
-
-*   Helm Integration: Provisioning is performed via `helm upgrade --install`, ensuring that re-running the logic for the same store name is safe.
-*   Seeding Logic: The operator checks for existing products via the WooCommerce CLI before attempting creation to prevent duplicates.
-*   Timed Retries: If a provisioning step fails (e.g., network timeout), Kopf handles the retry logic based on defined backoff strategies.
-*   Cleanup: Deleting a store triggers a finalizer in the operator that uninstalls the Helm release and removes the associated namespace, ensuring no orphaned resources remain.
-
-### Production Readiness Adjustments
-
-To transition from local k3d to a production environment, the following changes are implemented in values-prod.yaml:
-
-*   DNS: Uses real domain names instead of .local suffixes.
-*   Ingress: Enables TLS termination via Cert-Manager (Let's Encrypt).
-*   Storage: Configures a persistent StorageClass (e.g., Longhorn or EBS) instead of hostPath.
-*   Secrets: Management of database and admin passwords should be handled via Kubernetes Secrets or an external Vault.
-*   Hardening: Production namespaces apply strict NetworkPolicies to isolate tenant workloads from the management plane.
+### Production Considerations (Local vs. Prod)
+Transitioning to production requires addressing several layers:
+*   **DNS:** Moved from `*.localhost` to real wildcard DNS (`*.example.com`).
+*   **Ingress:** Traefik/Nginx must be configured with a valid `ClusterIssuer` (Cert-Manager) for automatic Let's Encrypt SSL/TLS, unlike the self-signed/HTTP approach locally.
+*   **Storage Class:** Local setups use `local-path` or `standard`. Production should use specific CSI drivers (e.g., `gp3` on AWS, `longhorn` for VPS chunks) for persistence and backups.
+*   **Secrets:** In local, we might default to simple secrets. In production, `values-prod.yaml` should leverage External Secrets or sealed secrets, and all default passwords must be rotated.
