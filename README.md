@@ -46,11 +46,6 @@ This script will:
 4.  Install the `helm/platform` chart.
 5.  Wait for all pods to be ready.
 
-### Access Info
-Once the script completes, the platform is available at:
-*   **Dashboard:** http://dashboard.localhost (or mapped port provided in output)
-*   **API:** http://api.localhost/docs
-
 ## VPS / Production Setup Instructions (k3s)
 
 This guide assumes a clean Linux VPS (Ubuntu 22.04 recommended) with a public IP and a domain name.
